@@ -22,7 +22,7 @@
 
 #define moveTimeout 1000
 
-
+#define IRAutomove 0x40BF00FF
 #define IRopen 0x40BF7887
 #define IRclose 0x40BFF807
 #define IRisopened 0x40BFE817
@@ -44,6 +44,7 @@ class MainController {
 	unsigned long remote_start;
 	unsigned long state_start;
 	bool moving;
+	bool autoclose_enabled;
 	int temperature;
 	int humidity;
 	dht11 dht_sensor;

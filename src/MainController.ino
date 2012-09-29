@@ -19,6 +19,7 @@ MainController::MainController():
 		state_start = 0;
 		humidity = 0;
 		moving = false;
+		autoclose_enabled = true;
 		ir_command = 0;
 		state = MainController::OPEN;
 }
@@ -118,13 +119,19 @@ void MainController::lcd_output(){
 	} else {
 		lcd.print("                ");
 	} 
-	lcd.setCursor(0,3);
+	lcd.setCursor(6,3);
 	if (ir_command != 0){
 		greenLed.blinkFor(500);
-		sprintf(msg, "    [ %.8lX ]", ir_command);
+		sprintf(msg, "    [%.8lX]", ir_command);
 		lcd.print(msg);
 	} else {
 	    lcd.print("                ");
+	}
+	lcd.setCursor(0,3);
+	if (autoclose_enabled){
+		lcd.print("[ВКЛ]");
+	} else {
+		lcd.print("[ВЫКЛ]");
 	}
 }
 
@@ -135,6 +142,18 @@ void MainController::check_move(){
 	moving = pir_sensor.is_moving();
 	if (moving)
 		process_move();
+
+#if DEBUG
+	int cnt = 0;
+	for (int i = pir_sensor.cur_event; i < pir_sensor.cur_event + 16; i++) {
+		Serial.print(pir_sensor.events[i % 16]);
+		if (pir_sensor.events[i % 16])
+			cnt++;
+	}
+	Serial.print(" (");
+	Serial.print(cnt);
+	Serial.println(")");
+#endif
 }
 
 void MainController::check_remote(){
@@ -193,6 +212,9 @@ void MainController::process_remote(unsigned long cmd) {
 	Serial.println();
 #endif
 	switch(cmd) {
+		case IRAutomove:
+			autoclose_enabled = !autoclose_enabled;
+			break;
 		case IRclose:
 			switch (state) {
 			case MainController::OPEN:
@@ -206,7 +228,6 @@ void MainController::process_remote(unsigned long cmd) {
 				change_state(MainController::STEPCLOSE);
 				break;
 			}
-
 			break;
 		case IRopen:
 			switch (state) {
@@ -241,7 +262,7 @@ void MainController::process_remote(unsigned long cmd) {
 }
 
 void MainController::process_move() {
-	if (state == MainController::OPEN)
+	if (state == MainController::OPEN && autoclose_enabled)
 		change_state(MainController::CLOSING_MOVE);
 }
 
